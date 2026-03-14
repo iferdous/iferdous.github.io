@@ -772,9 +772,8 @@ const CMDS = {
     // once deployed. Add as many as you want.
     // ══════════════════════════════════════════════════
     const PHOTOS = [
-      // { src: 'https://your-image-url.com/photo1.jpg', caption: 'caption here' },
-      // { src: 'https://your-image-url.com/photo2.jpg', caption: 'caption here' },
-      // { src: './photos/myshot.jpg', caption: 'caption here' },
+      { src: './pictures/lake mendota.jpg', caption: 'lake mendota' },
+      { src: './pictures/penns landing.jpg', caption: 'penns landing' },
     ];
 
     const grid = document.createElement('div');
@@ -790,8 +789,7 @@ const CMDS = {
       }
       appendEl(grid);
       blank();
-      node('<span class="c-dim">  # open index.html and find the PHOTOS array inside the photos() command.</span>');
-      node(`<span class="c-dim">  # add entries: { src: "url", caption: "text" } — renders automatically.</span>`);
+
     } else {
       PHOTOS.forEach(p => {
         const card = document.createElement('div');
