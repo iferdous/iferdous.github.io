@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ismam ferdous</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #0a0a0a;
+      --bg2:       #111111;
+      --bg3:       #1a1a1a;
+      --border:    #272727;
+      --text:      #c8c8c8;
+      --dim:       #555;
+      --dimmer:    #2e2e2e;
+      --green:     #4eff91;
+      --blue:      #57c7ff;
+      --yellow:    #ffe066;
+      --pink:      #ff79c6;
+      --red:       #ff5f57;
+      --cursor:    #4eff91;
+      --glow:      rgba(78,255,145,0.06);
+      --tag-bg:    rgba(78,255,145,0.09);
+      --tag-col:   #4eff91;
+      --shadow:    0 40px 100px rgba(0,0,0,0.9);
+      --scan:      rgba(0,0,0,0.035);
+    }
+    [data-theme="light"] {
+      --bg:        #f2ede4;
+      --bg2:       #e9e3d8;
+      --bg3:       #dfd8cc;
+      --border:    #c5bcad;
+      --text:      #2a2520;
+      --dim:       #7a7060;
+      --dimmer:    #b5aca0;
+      --green:     #1a7a3a;
+      --blue:      #1a5fa8;
+      --yellow:    #7a5f00;
+      --pink:      #8a1a5a;
+      --red:       #b03020;
+      --cursor:    #1a7a3a;
+      --glow:      rgba(26,122,58,0.05);
+      --tag-bg:    rgba(26,122,58,0.1);
+      --tag-col:   #1a7a3a;
+      --shadow:    0 30px 80px rgba(0,0,0,0.15);
+      --scan:      rgba(0,0,0,0.012);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      padding: 24px;
+      transition: background 0.35s;
+    }
+
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        var(--scan) 3px,
+        var(--scan) 4px
+      );
+      pointer-events: none;
+      z-index: 200;
+    }
+
+    /* CRT flicker */
+    @keyframes flicker {
+      0%,100% { opacity: 1; }
+      92%      { opacity: 1; }
+      93%      { opacity: 0.94; }
+      94%      { opacity: 1; }
+      96%      { opacity: 0.97; }
+      97%      { opacity: 1; }
+    }
+    body { animation: flicker 8s infinite; }
+
+    /* ── WINDOW ── */
+    .window {
+      width: 100%;
+      max-width: 900px;
+      min-width: 340px;
+      background: var(--bg2);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow:
+        var(--shadow),
+        0 0 0 1px rgba(255,255,255,0.03),
+        0 0 60px rgba(78,255,145,0.04),
+        0 0 120px rgba(78,255,145,0.02);
+      overflow: hidden;
+      transition: background 0.35s, border-color 0.35s, box-shadow 0.35s;
+      position: relative;
+    }
+    [data-theme="light"] .window {
+      box-shadow:
+        var(--shadow),
+        0 0 0 1px rgba(0,0,0,0.04);
+    }
+    /* resize handle — bottom-right corner */
+    .resize-handle {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 18px;
+      height: 18px;
+      cursor: se-resize;
+      z-index: 50;
+      opacity: 0.35;
+      transition: opacity 0.2s;
+      background:
+        linear-gradient(135deg, transparent 40%, var(--dim) 40%, var(--dim) 45%, transparent 45%),
+        linear-gradient(135deg, transparent 55%, var(--dim) 55%, var(--dim) 60%, transparent 60%),
+        linear-gradient(135deg, transparent 70%, var(--dim) 70%, var(--dim) 75%, transparent 75%);
+    }
+    .resize-handle:hover { opacity: 0.9; }
+
+    /* ── TITLEBAR ── */
+    .titlebar {
+      background: var(--bg3);
+      padding: 11px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      user-select: none;
+      transition: background 0.35s, border-color 0.35s;
+    }
+    .dots { display: flex; gap: 6px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot.r { background: #ff5f57; }
+    .dot.y { background: #febc2e; }
+    .dot.g { background: #28c840; }
+    .win-title {
+      color: var(--dim);
+      font-size: 11px;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      letter-spacing: 0.07em;
+      white-space: nowrap;
+    }
+    .theme-btn {
+      margin-left: auto;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--dim);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      padding: 3px 10px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+      position: relative;
+    }
+    .theme-btn:hover { border-color: var(--green); color: var(--green); background: var(--glow); }
+
+    /* ── STATUS BAR ── */
+    .statusbar {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: 5px 18px;
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      align-items: center;
+      font-size: 10px;
+      color: var(--dimmer);
+      letter-spacing: 0.05em;
+      transition: background 0.35s, border-color 0.35s;
+    }
+    .s-item { display: flex; align-items: center; gap: 5px; }
+    .s-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2.2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .s-val { color: var(--dim); }
+    .s-right { margin-left: auto; }
+
+    /* ── OUTPUT ── */
+    .output {
+      padding: 18px 20px 6px;
+      min-height: 500px;
+      max-height: 620px;
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--text);
+      transition: color 0.35s;
+    }
+    .output::-webkit-scrollbar { width: 3px; }
+    .output::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .line { white-space: pre-wrap; word-break: break-word; animation: fi 0.1s ease; }
+    @keyframes fi { from{opacity:0;transform:translateY(3px)} to{opacity:1;transform:none} }
+
+    .c-green  { color: var(--green); }
+    .c-blue   { color: var(--blue); }
+    .c-yellow { color: var(--yellow); }
+    .c-pink   { color: var(--pink); }
+    .c-dim    { color: var(--dim); }
+    .c-dimmer { color: var(--dimmer); }
+    .c-red    { color: var(--red); }
+
+    .tag {
+      display: inline-block;
+      background: var(--tag-bg);
+      color: var(--tag-col);
+      border: 1px solid var(--tag-col);
+      border-radius: 4px;
+      padding: 0 6px;
+      font-size: 10.5px;
+      margin: 1px 2px;
+      vertical-align: middle;
+      opacity: 0.9;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+
+    a.tl {
+      color: var(--pink);
+      text-decoration: none;
+      border-bottom: 1px dashed transparent;
+      transition: border-color 0.15s, color 0.15s;
+      cursor: pointer;
+    }
+    a.tl:hover { border-bottom-color: var(--pink); }
+
+    /* project card */
+    .pcard {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin: 3px 0 10px;
+      background: var(--bg3);
+      transition: border-color 0.2s, background 0.35s;
+    }
+    .pcard:hover { border-color: var(--green); }
+    .pcard-title { color: var(--blue); font-weight: 700; font-size: 13px; }
+    .pcard-desc  { color: var(--text); font-size: 12.5px; margin: 3px 0 5px; }
+    .pcard-url   { display: inline-block; margin-top: 5px; font-size: 12px; }
+
+    /* contact table */
+    .ctable {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 8px;
+      transition: border-color 0.35s;
+    }
+    .crow {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .crow:last-child { border-bottom: none; }
+    .crow:hover { background: var(--bg3); }
+    .crow-label { color: var(--dim); font-size: 11px; min-width: 72px; letter-spacing: 0.04em; }
+    .crow-arrow { color: var(--dimmer); }
+
+    /* divider */
+    hr.div { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+
+    /* ── INPUT ROW ── */
+    .input-row {
+      display: flex;
+      align-items: center;
+      padding: 4px 20px 16px;
+      gap: 0;
+    }
+    .ps1 { font-size: 13px; white-space: nowrap; flex-shrink: 0; }
+    .input-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      position: relative;
+      cursor: text;
+    }
+    .input-mirror {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--text);
+      white-space: pre;
+      pointer-events: none;
+      min-width: 0;
+    }
+    #cmd-input {
+      position: absolute;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: transparent;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      caret-color: transparent;
+      transition: color 0.35s;
+    }
+    ::placeholder { color: var(--dimmer); }
+
+    /* ── HINT ── */
+    .hint-bar {
+      padding: 0 20px 13px;
+      font-size: 10px;
+      color: var(--dimmer);
+      letter-spacing: 0.04em;
+    }
+    .hint-bar kbd {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--dim);
+      margin: 0 2px;
+    }
+
+    /* mobile tap row */
+    .mob-row {
+      display: none;
+      padding: 0 14px 14px;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .mob-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--dim);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 5px 11px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .mob-btn:hover { border-color: var(--green); color: var(--green); }
+    @media (max-width: 600px) { .mob-row { display: flex; } }
+
+    /* ── PHOTO GALLERY ── */
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+      margin: 6px 0 10px;
+    }
+    .photo-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--bg3);
+      transition: border-color 0.2s, transform 0.15s;
+      cursor: pointer;
+    }
+    .photo-card:hover { border-color: var(--text); transform: scale(1.02); }
+    .photo-img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      display: block;
+      background: var(--bg3);
+      font-size: 11px;
+      color: var(--dim);
+    }
+    .photo-caption {
+      padding: 5px 8px;
+      font-size: 10.5px;
+      color: var(--dim);
+      border-top: 1px solid var(--border);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .photo-empty {
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--dimmer);
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── BLINKING CURSOR ── */
+    .cursor-blink {
+      display: inline-block;
+      width: 8px;
+      height: 14px;
+      background: var(--cursor);
+      border-radius: 1px;
+      animation: cur 1.1s step-end infinite;
+      flex-shrink: 0;
+      box-shadow: 0 0 6px var(--cursor);
+      transition: background 0.3s, box-shadow 0.3s;
+      pointer-events: none;
+      vertical-align: middle;
+      margin-left: 1px;
+    }
+    @keyframes cur { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* ── TYPEWRITER for boot lines ── */
+    .typewriter {
+      overflow: hidden;
+      white-space: nowrap;
+      border-right: 2px solid var(--cursor);
+      animation: typing 0.4s steps(40,end) forwards, blink-caret 0.8s step-end 3;
+    }
+    @keyframes typing     { from{width:0} to{width:100%} }
+    @keyframes blink-caret{ 0%,100%{border-color:var(--cursor)} 50%{border-color:transparent} }
+
+    /* ── RESUME/CV COLOR CLASSES ── */
+    .r-section {
+      color: var(--yellow);
+      font-weight: 700;
+      border-bottom: 1px solid var(--border);
+      display: block;
+      padding-bottom: 3px;
+      letter-spacing: 0.08em;
+      font-size: 11px;
+    }
+    .r-role   { color: var(--blue);  font-weight: 700; }
+    .r-place  { color: var(--green); }
+    .r-period { color: var(--dim);   font-size: 11px; }
+    .r-bullet { color: var(--text);  padding-left: 2px; }
+    .r-tech   { color: var(--pink);  font-size: 11px; }
+    .r-name   { color: var(--green); font-weight: 700; font-size: 15px; letter-spacing: 0.06em; }
+    .r-contact{ color: var(--dim);   font-size: 11.5px; }
+    .r-skill-cat { color: var(--yellow); display:inline-block; min-width:120px; }
+    .r-skill-val { color: var(--text); }
+    .r-highlight { color: var(--green); font-weight: 700; }
+    .r-course-code { color: var(--blue); display:inline-block; min-width:90px; }
+    .r-course-desc { color: var(--dim); }
+    .r-lead   { color: var(--pink); font-weight: 700; }
+    .r-body   { color: var(--dim);  line-height: 1.9; }
+  </style>
+</head>
+<body>
+<div class="window" id="win">
+  <div class="resize-handle" id="resize-h"></div>
+
+  <div class="titlebar">
+    <div class="dots">
+      <div class="dot r"></div>
+      <div class="dot y"></div>
+      <div class="dot g"></div>
+    </div>
+    <span class="win-title">ismam — ~/portfolio — zsh</span>
+    <button class="theme-btn" onclick="toggleTheme()">
+      <span id="t-icon">☀</span><span id="t-lbl">light</span>
+    </button>
+  </div>
+
+  <div class="statusbar">
+    <div class="s-item"><div class="s-dot"></div><span class="s-val">online</span></div>
+    <div class="s-item">loc<span class="c-dim" style="margin:0 2px">:</span><span class="s-val">remote / sf</span></div>
+    <div class="s-item">status<span class="c-dim" style="margin:0 2px">:</span><span class="s-val">open to work</span></div>
+    <div class="s-item s-right">↑↓ history &nbsp;|&nbsp; tab autocomplete</div>
+  </div>
+
+  <div class="output" id="out"></div>
+
+  <div class="input-row" id="input-row-el">
+    <span class="ps1">
+      <span class="c-green">ismam</span><span class="c-dim">@</span><span class="c-blue">portfolio</span><span class="c-dim">:~$&nbsp;</span>
+    </span>
+    <div class="input-wrap">
+      <span class="input-mirror" id="input-mirror"></span><span class="cursor-blink" id="cur-blink"></span>
+      <input id="cmd-input" type="text" autocomplete="off" spellcheck="false" />
+    </div>
+  </div>
+
+  <div class="hint-bar">
+    <kbd>help</kbd><kbd>whoami</kbd><kbd>skills</kbd><kbd>projects</kbd><kbd>experience</kbd><kbd>contact</kbd><kbd>clear</kbd>
+  </div>
+
+  <div class="mob-row">
+    <button class="mob-btn" onclick="run('whoami')">whoami</button>
+    <button class="mob-btn" onclick="run('skills')">skills</button>
+    <button class="mob-btn" onclick="run('projects')">projects</button>
+    <button class="mob-btn" onclick="run('experience')">experience</button>
+    <button class="mob-btn" onclick="run('contact')">contact</button>
+    <button class="mob-btn" onclick="run('clear')">clear</button>
+  </div>
+
+</div>
+
+<script>
+/* ══════════════════════════════
+   EDIT YOUR DATA HERE
+══════════════════════════════ */
+const ME = {
+  name:     'Ismam Ferdous',
+  role:     'CS & Math @ UW-Madison  ·  ML / iOS / Data Science',
+  location: 'Madison, WI',
+  status:   'actively looking for internships & early-stage roles',
+  bio:      'CS + Math student at UW-Madison. I build iOS apps, train ML models, and dig into real-world data. Passionate about AI-native products and startups that move fast.',
+  email:    { label: 'ferdousismam6@gmail.com',        href: 'mailto:ferdousismam6@gmail.com' },
+  github:   { label: 'github.com/iferdous',            href: 'https://github.com/iferdous' },
+  linkedin: { label: 'linkedin.com/in/ismam-ferdous',  href: 'https://linkedin.com/in/ismam-ferdous' },
+  phone:    { label: '267-947-7894',                   href: 'tel:2679477894' },
+};
+
+const PROJECTS = [
+  {
+    name: 'EuroTour — European Tourist App',
+    desc: 'iOS app with historical info, photos, real-time navigation, trip planning and save-destinations feature.',
+    tech: ['Swift', 'SwiftUI', 'Apple Maps API', 'Firebase'],
+    url:  'https://github.com/iferdous',
+  },
+  {
+    name: 'California Housing Predictions',
+    desc: 'ML model pipeline — cleaned dataset, log transforms, linear regression (R²=0.68), tuned Random Forest (R²=0.81).',
+    tech: ['Python', 'Scikit-learn', 'Pandas', 'Matplotlib'],
+    url:  'https://github.com/iferdous',
+  },
+  {
+    name: 'BudgetWise — Finance Tracker',
+    desc: 'Expense tracker iOS app with category labels, monthly summaries, real-time Firebase sync, and personalized budgeting insights.',
+    tech: ['SwiftUI', 'Firebase', 'Xcode'],
+    url:  'https://github.com/iferdous',
+  },
+];
+
+const SKILLS = [
+  { cat:'Languages', items:['Python', 'Java', 'Swift', 'Kotlin', 'R', 'SQL', 'HTML'] },
+  { cat:'ML / DS',   items:['PyTorch', 'TensorFlow', 'Scikit-learn', 'Pandas', 'Matplotlib'] },
+  { cat:'iOS',       items:['SwiftUI', 'Xcode', 'Apple Maps API', 'Firebase'] },
+  { cat:'Other',     items:['LaTeX', 'Git', 'R Studio'] },
+];
+
+const EXPERIENCE = [
+  {
+    role:    'IT Help Desk Support Specialist',
+    company: 'UW-Madison',
+    period:  'Sep 2025 – Jan 2026',
+    desc:    'Troubleshot hardware, software, and networking on macOS & Windows. Managed reimaging and AV equipment.',
+  },
+  {
+    role:    'Student Data Science Researcher',
+    company: 'FLi Sci',
+    period:  'Oct 2024 – May 2025',
+    desc:    'Applied clustering & regression in R to socioeconomic datasets. Presented findings to faculty and peers.',
+  },
+  {
+    role:    'Student Researcher — ML',
+    company: 'LearnSTEM',
+    period:  'Jul 2024 – Jan 2025',
+    desc:    'Built CNNs in PyTorch for MRI scan analysis. Implemented classification, regression, and generative models.',
+  },
+  {
+    role:    'Python Tutor',
+    company: 'Teddy Bear Community',
+    period:  'Nov 2024 – Apr 2025',
+    desc:    'Tutored 10 middle schoolers in Python. Guided 3 coding projects — variables, loops, conditionals, functions.',
+  },
+  {
+    role:    'Student Researcher — Nanotechnology',
+    company: 'West Chester University',
+    period:  'Jun 2023 – Jul 2023',
+    desc:    'Synthesized nanoscale structures via microscopy & X-ray diffraction. Improved porosity 15% for biosensing.',
+  },
+];
+/* ══════════════════════════════ */
+
+/* theme */
+function toggleTheme() {
+  const html = document.documentElement;
+  const dark = html.dataset.theme === 'dark';
+  html.dataset.theme = dark ? 'light' : 'dark';
+  document.getElementById('t-icon').textContent = dark ? '☾' : '☀';
+  document.getElementById('t-lbl').textContent  = dark ? 'dark' : 'light';
+}
+
+/* dom helpers */
+const outEl  = document.getElementById('out');
+const inpEl  = document.getElementById('cmd-input');
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function tag(t) { return `<span class="tag">${esc(t)}</span>`; }
+function link(label, href) { return `<a class="tl" href="${esc(href)}" target="_blank" rel="noopener">${esc(label)}</a>`; }
+
+function node(html, cls) {
+  const d = document.createElement('div');
+  d.className = 'line' + (cls ? ' '+cls : '');
+  d.innerHTML = html;
+  outEl.appendChild(d);
+  outEl.scrollTop = outEl.scrollHeight;
+  return d;
+}
+function txt(text, cls) { node(esc(text), cls); }
+function blank()        { txt(''); }
+function hr()           { const e=document.createElement('hr'); e.className='div line'; outEl.appendChild(e); }
+function echo(input) {
+  node('<span class="c-green">ismam</span><span class="c-dim">@</span><span class="c-blue">portfolio</span><span class="c-dim">:~$</span> ' + esc(input));
+}
+function appendEl(el) { el.classList.add('line'); outEl.appendChild(el); outEl.scrollTop=outEl.scrollHeight; }
+
+/* commands */
+const CMDS = {
+
+  help() {
+    blank();
+    txt('# available commands', 'c-dim');
+    blank();
+    [
+      ['whoami',      'who i am'],
+      ['skills',      'my tech stack'],
+      ['projects',    'things i\'ve built'],
+      ['experience',  'work history'],
+      ['contact',     'links & socials'],
+      ['ls',          'list directory'],
+      ['cat <file>',  'read a file  (resume.txt · CV.txt · README.md)'],
+      ['photos',       'view my photos & work'],
+      ['open <url>',  'open a link'],
+      ['clear',       'clear the screen'],
+    ].forEach(([c,d]) => node(`<span class="c-green" style="display:inline-block;min-width:150px">${esc(c)}</span><span class="c-dim">${esc(d)}</span>`));
+    blank();
+  },
+
+  whoami() {
+    blank();
+    node(`<span style="font-size:16px;font-weight:700;color:var(--green)">${esc(ME.name)}</span>`);
+    node(`<span class="c-blue">${esc(ME.role)}</span>`);
+    node(`<span class="c-dim">${esc(ME.location)}</span>`);
+    blank();
+    txt(ME.bio);
+    blank();
+    node(`<span class="c-dim">status → </span><span class="tag">${esc(ME.status)}</span>`);
+    blank();
+  },
+
+  skills() {
+    blank();
+    txt('── tech stack ──', 'c-dim');
+    blank();
+    SKILLS.forEach(({cat,items}) => {
+      node(`<span class="c-yellow" style="display:inline-block;min-width:90px;margin-right:8px">${esc(cat)}</span>${items.map(tag).join(' ')}`);
+    });
+    blank();
+  },
+
+  projects() {
+    blank();
+    txt(`── ${PROJECTS.length} projects ──`, 'c-dim');
+    blank();
+    PROJECTS.forEach((p,i) => {
+      const card = document.createElement('div');
+      card.className = 'pcard';
+      card.innerHTML = `
+        <div class="pcard-title">${esc(i+1+'. '+p.name)}</div>
+        <div class="pcard-desc">${esc(p.desc)}</div>
+        <div style="margin:4px 0">${p.tech.map(tag).join(' ')}</div>
+        <div class="pcard-url">${link('→ '+p.url, p.url)}</div>
+      `;
+      appendEl(card);
+    });
+    blank();
+  },
+
+  experience() {
+    blank();
+    txt('── work history ──', 'c-dim');
+    blank();
+    EXPERIENCE.forEach((e,i) => {
+      node(`<span class="c-blue" style="font-weight:700">${esc(e.role)}</span>  <span class="c-dim">@</span>  <span style="color:var(--text)">${esc(e.company)}</span>`);
+      txt(e.period, 'c-dimmer');
+      node(`<span style="color:var(--dim)">  ${esc(e.desc)}</span>`);
+      if (i < EXPERIENCE.length-1) blank();
+    });
+    blank();
+  },
+
+  contact() {
+    blank();
+    txt('── reach me ──', 'c-dim');
+    blank();
+    const wrap = document.createElement('div');
+    wrap.className = 'ctable';
+    const contacts = [
+      { label:'email',    ...ME.email },
+      { label:'github',   ...ME.github },
+      { label:'linkedin', ...ME.linkedin },
+      { label:'phone',    ...ME.phone },
+    ];
+    contacts.forEach(c => {
+      const row = document.createElement('div');
+      row.className = 'crow';
+      row.innerHTML = `<span class="crow-label">${esc(c.label)}</span><span class="crow-arrow c-dim">→</span>${link(c.label, c.href)}`;
+      // override link text to the label value
+      row.innerHTML = `<span class="crow-label">${esc(c.label)}</span><span class="crow-arrow c-dim">→</span><a class="tl" href="${esc(c.href)}" target="_blank" rel="noopener">${esc(c.label)}</a>`;
+      // add full label
+      const a = row.querySelector('a');
+      a.textContent = c.label;
+      // rebuild properly
+      row.innerHTML = '';
+      const lbl = document.createElement('span');
+      lbl.className = 'crow-label';
+      lbl.textContent = c.label;
+      const arr = document.createElement('span');
+      arr.className = 'crow-arrow c-dim';
+      arr.textContent = '→';
+      const anchor = document.createElement('a');
+      anchor.className = 'tl';
+      anchor.href = c.href;
+      anchor.target = '_blank';
+      anchor.rel = 'noopener';
+      anchor.textContent = c.label;
+      row.appendChild(lbl);
+      row.appendChild(arr);
+      row.appendChild(anchor);
+      // show full label text in a second span
+      const full = document.createElement('span');
+      full.className = 'c-dim';
+      full.style.fontSize = '11px';
+      full.style.marginLeft = '8px';
+      full.textContent = c.label !== 'email' ? c.label : '';
+      // reset: show proper label as link text + value dim text
+      anchor.textContent = c.label;
+      wrap.appendChild(row);
+    });
+    appendEl(wrap);
+    blank();
+    node(`<span class="c-dim">status → </span><span class="tag">${esc(ME.status)}</span>`);
+    blank();
+  },
+
+  ls() {
+    blank();
+    [
+      { name:'projects/',   cls:'c-blue' },
+      { name:'experience/', cls:'c-blue' },
+      { name:'photos/',     cls:'c-blue' },
+      { name:'resume.txt',  cls:'c-green' },
+      { name:'CV.txt',      cls:'c-green' },
+      { name:'README.md',   cls:'c-dim' },
+    ].forEach(f => node(`<span class="${f.cls}">${esc(f.name)}</span>`));
+    blank();
+  },
+
+  photos() {
+    blank();
+    txt('── photos ──', 'c-dim');
+    blank();
+
+    // ══════════════════════════════════════════════════
+    // ADD YOUR PHOTOS HERE
+    // Each entry: { src: 'url-or-path', caption: 'text' }
+    // You can use direct image URLs or local file paths
+    // once deployed. Add as many as you want.
+    // ══════════════════════════════════════════════════
+    const PHOTOS = [
+      // { src: 'https://your-image-url.com/photo1.jpg', caption: 'caption here' },
+      // { src: 'https://your-image-url.com/photo2.jpg', caption: 'caption here' },
+      // { src: './photos/myshot.jpg', caption: 'caption here' },
+    ];
+
+    const grid = document.createElement('div');
+    grid.className = 'photo-grid line';
+
+    if (PHOTOS.length === 0) {
+      // show placeholder slots so it looks intentional
+      for (let i = 0; i < 4; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'photo-empty';
+        slot.textContent = i === 0 ? 'add photos in PHOTOS[]' : '· · ·';
+        grid.appendChild(slot);
+      }
+      appendEl(grid);
+      blank();
+      node('<span class="c-dim">  # open index.html and find the PHOTOS array inside the photos() command.</span>');
+      node(`<span class="c-dim">  # add entries: { src: "url", caption: "text" } — renders automatically.</span>`);
+    } else {
+      PHOTOS.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'photo-card';
+        const img = document.createElement('img');
+        img.className = 'photo-img';
+        img.src = p.src;
+        img.alt = p.caption;
+        img.loading = 'lazy';
+        const cap = document.createElement('div');
+        cap.className = 'photo-caption';
+        cap.textContent = p.caption;
+        card.appendChild(img);
+        card.appendChild(cap);
+        // click to open full size
+        card.addEventListener('click', () => window.open(p.src, '_blank', 'noopener'));
+        grid.appendChild(card);
+      });
+      appendEl(grid);
+    }
+    blank();
+  },
+
+};
+
+function catFile(f) {
+
+  /* helper — shorthand colored nodes for resume/cv */
+  function rSection(t)  { node(`<span class="r-section">${esc(t)}</span>`); }
+  function rRole(t)     { return `<span class="r-role">${esc(t)}</span>`; }
+  function rPlace(t)    { return `<span class="r-place">${esc(t)}</span>`; }
+  function rPeriod(t)   { return `<span class="r-period">${esc(t)}</span>`; }
+  function rTech(t)     { return `<span class="r-tech">${esc(t)}</span>`; }
+  function rBullet(t)   { node(`<span class="r-bullet">  – ${esc(t)}</span>`); }
+  function rCourse(code,desc){ node(`<span class="r-course-code">${esc(code)}</span>  <span class="r-course-desc">${esc(desc)}</span>`); }
+  function rSkill(cat,val)   { node(`<span class="r-skill-cat">${esc(cat)}</span>  <span class="r-skill-val">${esc(val)}</span>`); }
+  function rHeader(role,place,period) {
+    node(`${rRole(role)}  <span class="r-period">·</span>  ${rPlace(place)}`);
+    node(`${rPeriod(period)}`);
+  }
+
+  const map = {
+
+    /* ══════════════════════════════════════
+       RESUME.TXT
+    ══════════════════════════════════════ */
+    'resume.txt': () => {
+      blank();
+      node('<span class="r-name">ISMAM FERDOUS</span>');
+      node('<span class="r-contact">Computer Science & Mathematics · University of Wisconsin–Madison</span>');
+      node('<span class="r-contact">267-947-7894 · iferdous@wisc.edu · linkedin.com/in/ismam-ferdous · github.com/iferdous · Madison, WI</span>');
+      blank();
+
+      rSection('EDUCATION');
+      blank();
+      node(`<span class="r-role">University of Wisconsin – Madison</span>`);
+      node('<span class="r-place">B.S. Computer Science and Mathematics · Madison, WI</span>');
+      node('<span class="r-period">Key Coursework: CS 300, CS 400, Math 234, ECE 252, STAT 240, Math 340</span>');
+      blank();
+
+      rSection('EXPERIENCE');
+      blank();
+
+      rHeader('IT Help Desk Support Specialist','University of Wisconsin–Madison · On-Site','Sep 2025 – Jan 2026');
+      rBullet('Troubleshot hardware, software, and networking issues for students, faculty, and staff across macOS and Windows.');
+      rBullet('Coordinated classroom technology, printing services, and circulation workflows with library staff.');
+      rBullet('Managed circulation, reimaging, and maintenance of laptops, cameras, and AV equipment.');
+      blank();
+
+      rHeader('Student Researcher','LearnSTEM · Remote','Jul 2024 – Jan 2025');
+      rBullet('Implemented classification, regression, and generative models in Python and PyTorch, grounded in linear algebra, probability, and statistics.');
+      rBullet('Implemented CNNs for MRI scan analysis, improving diagnostic accuracy.');
+      rBullet('Applied ML techniques to a real-world dataset, analyzing and presenting results across multiple methods.');
+      blank();
+
+      rHeader('Student Data Science Researcher','FLi Sci · Remote','Oct 2024 – May 2025');
+      rBullet('Gained R programming and advanced statistical analysis skills under graduate-level mentorship.');
+      rBullet('Communicated research findings to faculty and peers through structured presentations.');
+      rBullet('Applied clustering and regression in R to a socioeconomic dataset, identifying patterns in regional income disparity.');
+      blank();
+
+      rHeader('Tutor','Teddy Bear Community · Philadelphia, PA','Nov 2024 – Apr 2025');
+      rBullet('Tutored 10 middle schoolers in Python basics (variables, loops, conditionals, functions).');
+      rBullet('Guided students through 3 coding projects and interactive exercises to build confidence.');
+      blank();
+
+      rHeader('Student Researcher','West Chester University · West Chester, PA','Jun 2023 – Jul 2023');
+      rBullet('Synthesized nanoscale structures using microscopy, X-ray diffraction, and spectroscopy.');
+      rBullet('Improved porosity by 15% via electrochemical and laser-assisted processes for biosensing applications.');
+      blank();
+
+      rSection('PROJECTS');
+      blank();
+
+      node(`<span class="r-role">EuroTour: European Tourist App</span>  ${rTech('Swift · SwiftUI · Apple Maps API · Firebase')}`);
+      rBullet('Designed iOS app with historical info, photos, and real-time navigation via Apple Maps.');
+      rBullet('Added trip planning features: save destinations, view distances, intuitive Apple-style UI.');
+      blank();
+
+      node(`<span class="r-role">California Housing Predictions Model</span>  ${rTech('Python · Scikit-learn · Pandas · Matplotlib')}`);
+      rBullet('Cleaned dataset with features like location, rooms, and median income; applied log transforms and encoding.');
+      rBullet('Built linear regression model with R² of 0.68; tuned Random Forest with grid search to reach R² of 0.81.');
+      blank();
+
+      node(`<span class="r-role">BudgetWise: Finance Tracker</span>  ${rTech('SwiftUI · Firebase · Xcode')}`);
+      rBullet('Developed expense tracker with category labels, monthly summaries, and real-time sync via Firebase.');
+      rBullet('Added personalized budgeting insights for user profiles.');
+      blank();
+
+      rSection('SKILLS');
+      blank();
+      rSkill('Programming', 'Python, Java, Kotlin, Swift, R');
+      rSkill('ML / DS',     'PyTorch, TensorFlow, Scikit-learn, Pandas, Matplotlib');
+      rSkill('Other',       'SQL, HTML, LaTeX');
+      blank();
+
+      rSection('LEADERSHIP & VOLUNTEER');
+      blank();
+
+      node(`<span class="r-lead">XPrize</span>  <span class="r-period">· Community Impact Research · Feb 2024 – May 2024</span>`);
+      rBullet('Researched Philadelphia water quality and identified contaminants with a 4-member team.');
+      rBullet('Proposed 3 strategies to improve filtration and distribution; collaborated with residents and policymakers.');
+      blank();
+
+      node(`<span class="r-lead">Student Voice Advisory Board Member</span>  <span class="r-period">· Outreach + Advocacy · Jan 2024 – May 2024</span>`);
+      rBullet('Represented student perspectives to the Office of Strategic Partnerships, influencing programming decisions across district schools.');
+      rBullet('Collaborated with peer leaders and staff to identify gaps and develop new initiatives.');
+      rBullet('Built leadership and advocacy skills through high-level meetings with OSP, shaping district-wide outcomes.');
+      blank();
+
+      node('<span class="r-period">— end of resume.txt —</span>');
+      blank();
+    },
+
+    /* ══════════════════════════════════════
+       CV.TXT
+    ══════════════════════════════════════ */
+    'cv.txt': () => {
+      blank();
+      node('<span class="r-name">ISMAM FERDOUS</span>');
+      node('<span class="r-contact">Computer Science & Mathematics · University of Wisconsin–Madison</span>');
+      node('<span class="r-contact">267-947-7894 · iferdous@wisc.edu · linkedin.com/in/ismam-ferdous · github.com/iferdous · Madison, WI</span>');
+      blank();
+
+      rSection('PROFILE');
+      blank();
+      node('<span class="r-body">Computer Science and Mathematics student at UW–Madison with hands-on experience across software engineering,</span>');
+      node('<span class="r-body">machine learning, and applied AI research. I build real, deployed products — from full-stack iOS applications to</span>');
+      node('<span class="r-body">trained neural networks — while drawing on a rigorous quantitative foundation in linear algebra, statistics, and</span>');
+      node('<span class="r-body">calculus. I move fast, learn independently, and care deeply about writing software that works in the real world</span>');
+      node('<span class="r-body">and AI systems that are thoughtfully built.</span>');
+      blank();
+
+      rSection('CORE ACADEMIC FOUNDATION');
+      blank();
+      rCourse('CS 300 —', 'Programming II: Data structures & algorithms (trees, hash maps, sorting, recursion) and OOP in Java.');
+      blank();
+      rCourse('CS 400 —', 'Programming III: Advanced algorithms, graph traversal, dynamic programming, AVL trees, heaps, design patterns, complexity analysis.');
+      blank();
+      rCourse('ECE 252 —','Computer Engineering: Systems-level thinking — digital logic, processor architecture, memory hierarchies, and assembly.');
+      blank();
+      rCourse('STAT 240 —','Data Science Modeling: R-based statistical modeling, probability, regression, hypothesis testing, and data visualization.');
+      blank();
+      rCourse('Math 234 —','Multivariable Calculus: Partial derivatives, gradients, and optimization — the mathematical backbone of gradient descent.');
+      blank();
+      rCourse('Math 340 —','Linear Algebra: Vectors, matrices, eigenvalues, and linear transformations — the language of machine learning.');
+      blank();
+
+      rSection('SOFTWARE ENGINEERING & FULL-STACK DEVELOPMENT');
+      blank();
+      node('<span class="r-body">I build complete, user-facing products — not just prototypes. Both projects below were designed, built, and shipped independently from scratch.</span>');
+      blank();
+
+      node(`<span class="r-role">EuroTour (iOS)</span>  ${rTech('Swift · SwiftUI · Apple Maps API · Firebase')}`);
+      node('<span class="r-body">  European travel app with real-time Apple Maps navigation, Firebase backend, trip planning, destination saving,</span>');
+      node('<span class="r-body">  and a native Apple-style UI. Full stack, solo built.</span>');
+      blank();
+
+      node(`<span class="r-role">BudgetWise (iOS)</span>  ${rTech('SwiftUI · Firebase · Xcode')}`);
+      node('<span class="r-body">  Personal finance tracker — expense categories, monthly dashboards, real-time Firebase sync, and personalized</span>');
+      node('<span class="r-body">  budgeting insights per user profile. End-to-end product ownership.</span>');
+      blank();
+
+      node('<span class="r-body">On both projects I owned the entire stack: UI/UX design, application logic, API integration, and cloud backend.</span>');
+      node('<span class="r-body">That breadth of ownership — designing the data model, wiring the backend, shipping a polished UI — is what I bring to any team.</span>');
+      blank();
+
+      rSection('MACHINE LEARNING, AI & DATA SCIENCE');
+      blank();
+      node('<span class="r-body">ML and AI are central to how I think about building software. Over the past two years I have moved from studying the theory to building and shipping systems that use it.</span>');
+      blank();
+
+      node('<span class="r-role">Neural Network Architecture & Training</span>');
+      node('<span class="r-body">  Designed, trained, and evaluated networks across multiple architectures — CNNs for image classification,</span>');
+      node('<span class="r-body">  feedforward nets for tabular data, sequence models for time-series. Full training loop: weight initialization,</span>');
+      node('<span class="r-body">  forward & backward passes, loss functions, optimizers (SGD, Adam, RMSProp), dropout, L2 regularization.</span>');
+      blank();
+
+      node('<span class="r-role">PyTorch — Primary Framework</span>');
+      node('<span class="r-body">  Primary deep learning framework. Custom nn.Module subclasses, custom training loops, DataLoader pipelines</span>');
+      node('<span class="r-body">  with transforms, learning rate schedulers, TensorBoard logging. Used for both research experimentation</span>');
+      node('<span class="r-body">  and production-oriented codebases.</span>');
+      blank();
+
+      node('<span class="r-role">TensorFlow & Keras</span>');
+      node('<span class="r-body">  Proficient in TF/Keras for model definition, training, and export. Used at LearnSTEM for MRI scan CNN —</span>');
+      node('<span class="r-body">  building, training, and evaluating on real diagnostic imaging data. Comfortable with tf.data and model serialization.</span>');
+      blank();
+
+      node('<span class="r-role">Medical Imaging — CNN on MRI Scans</span>');
+      node('<span class="r-body">  At LearnSTEM, implemented a CNN pipeline to classify MRI scans on real medical imaging data. Preprocessing</span>');
+      node('<span class="r-body">  DICOM images, normalizing pixel distributions, data augmentation (flips, rotations, contrast jitter) for class</span>');
+      node('<span class="r-body">  imbalance, iterating on architecture depth and kernel sizes. Evaluated with precision, recall, F1, and ROC-AUC.</span>');
+      blank();
+
+      node('<span class="r-role">End-to-End ML Pipeline Design</span>');
+      node('<span class="r-body">  Full regression pipeline on California housing data — CSV ingestion, EDA, outlier handling, feature engineering</span>');
+      node('<span class="r-body">  (log transforms, one-hot encoding, interaction terms), train/val/test splits, cross-validated model selection.</span>');
+      node('<span class="r-body">  Benchmarked linear regression (R²=0.68) against grid-search-tuned Random Forest (R²=0.81). Reproducible notebook.</span>');
+      blank();
+
+      node('<span class="r-role">LLM API Integration & Prompt Engineering</span>');
+      node('<span class="r-body">  Integrated OpenAI and Anthropic APIs into application prototypes — streaming responses, structured prompt</span>');
+      node('<span class="r-body">  templates, context window management, parsing model outputs. Built conversational interfaces with function</span>');
+      node('<span class="r-body">  calling, system prompt design, and multi-turn conversation management.</span>');
+      blank();
+
+      node('<span class="r-role">Experiment Tracking & Reproducibility</span>');
+      node('<span class="r-body">  Seeding random state, logging hyperparameters, tracking metrics across runs, version-controlling training code</span>');
+      node('<span class="r-body">  alongside model checkpoints. Manual logging and Weights & Biases for experiment comparison.</span>');
+      blank();
+
+      node('<span class="r-role">Data Wrangling at Scale</span>');
+      node('<span class="r-body">  Extensive Pandas experience — nulls, type coercion, reshaping (melt/pivot), merging multi-source data,</span>');
+      node('<span class="r-body">  reusable preprocessing pipelines. NumPy for vectorized operations, SciPy for statistical tests.</span>');
+      blank();
+
+      node('<span class="r-role">Statistical Modeling & Inference</span>');
+      node('<span class="r-body">  Graduate-level statistical research at FLi Sci — regression models, interpreting coefficients and confidence</span>');
+      node('<span class="r-body">  intervals, hypothesis tests (t-test, chi-squared, ANOVA), ggplot2 visualization. Strong intuition for when</span>');
+      node('<span class="r-body">  a simple statistical model outperforms a complex ML one.</span>');
+      blank();
+
+      rSection('SKILLS');
+      blank();
+      rSkill('Languages',     'Python  Swift  Java  Kotlin  R  SQL  HTML');
+      rSkill('ML / AI Stack', 'PyTorch  TensorFlow  Scikit-learn  Pandas  NumPy  Matplotlib  LLM APIs');
+      rSkill('Tools',         'Firebase  Xcode  Git  W&B  SwiftUI  LaTeX  Jupyter');
+      blank();
+
+      rSection('WHAT I PRIORITIZE');
+      blank();
+      node('<span class="r-lead">Cross-disciplinary depth</span>');
+      node('<span class="r-body">  CS + Math background — I understand why things work, not just how to implement them,</span>');
+      node('<span class="r-body">  and I can reason about them when they do not.</span>');
+      blank();
+      node('<span class="r-lead">Building with intention</span>');
+      node('<span class="r-body">  I think about what a problem actually needs before choosing a tool — slowing down before</span>');
+      node('<span class="r-body">  jumping into code, understanding the shape of the problem first.</span>');
+      blank();
+      node('<span class="r-lead">Clear communication</span>');
+      node('<span class="r-body">  From tutoring middle schoolers in Python to presenting water quality research to policymakers,</span>');
+      node('<span class="r-body">  I make technical work legible to any audience.</span>');
+      blank();
+
+      rSection('WHAT I AM FOCUSING ON');
+      blank();
+      node('<span class="r-lead">ML Engineering</span>');
+      node('<span class="r-body">  Model deployment, LLM application development, retrieval-augmented generation, and building</span>');
+      node('<span class="r-body">  AI-powered products end to end.</span>');
+      blank();
+      node('<span class="r-lead">Full-Stack Growth</span>');
+      node('<span class="r-body">  Scalable backend systems and clean architecture alongside mobile and web frontend development.</span>');
+      blank();
+      node('<span class="r-lead">Role Target</span>');
+      node('<span class="r-body">  Intersection of software engineering and applied AI — building intelligent, real-world products</span>');
+      node('<span class="r-body">  and growing alongside strong engineers and researchers.</span>');
+      blank();
+
+      node('<span class="r-period">— end of CV.txt —</span>');
+      blank();
+    },
+
+    'readme.md': () => {
+      blank();
+      node(`<span class="r-highlight"># ${esc(ME.name)}'s portfolio</span>`);
+      blank();
+      txt('type  help  to see all commands.', 'c-dim');
+      blank();
+    },
+  };
+  const fn = map[(f||'').toLowerCase()];
+  fn ? fn() : (txt(`cat: ${f}: No such file or directory`, 'c-red'), blank());
+}
+
+function openLink(raw) {
+  if (!raw) { txt('usage: open <url>', 'c-dim'); blank(); return; }
+  const url = raw.startsWith('http') ? raw : 'https://' + raw;
+  window.open(url, '_blank', 'noopener');
+  node(`<span class="c-dim">opening ${esc(url)}...</span>`);
+  blank();
+}
+
+/* boot sequence — ASCII art portrait */
+function bootAscii() {
+  const lines = [
+`████████████████████████████████████▓╬╬▓█▓▓▓███████████`,
+`████████████████████████████████████╬╬╬▓█╣╬╬╬╬╬█████████`,
+`███████████████████████████████████╬╬╬╠╬╬╬╩╩╠╬╬╫██╬╬╠╠╬█`,
+`███████████████████████████████████▓╣╫╬╬╠▒▒▒╠╬╣▓▓╬╬╠╣╬▓█`,
+`███████████████████████████████████▓▓╬╬╬╠▒▒╠╬╬▓▓▓╢╬╬▓████`,
+`███████████████████████████████████▓╬╬╬╠╠╠╠╠╬╣▓█▓▓████████╠╠▓████`,
+`███████████████████████████████████▓╬╬╬╬╬╬▓▓▓▓╬╬╣█████████╚Ñ╟███████`,
+`████████████████████████████████████Ñ██▓╬╬╬╬╬╬╬╣▓█╬███████▓█▓▓▓▓▓██████`,
+`██████████████████████████████▓▓▓▓▓╬Ü▓▓╬╬╬╬╬╬╬╬╣▀Ñ╬█████████████████████`,
+`███████████████████████████▓▓▓▓▓╬╬╬Ü░░╚╣╬╬╬╬╬╩Ü░░╠╣▓▓▓▓▓████████████████`,
+`████████████████████╬▓▓▓▓▓▓▓╬╣╬╣╬╬Ü░»▓▌▒╠╠╠╠▄»░░▒╬╣▓▓▓╣╬╬╬▓█████████████`,
+`███████████████████▓╣╬╣╣╬╬▓╬╬╬╣╬╬Ü░░░░▓╬▓███▀░░╠╬╬╬╬▓╬╬╬╬╬╬╬╣╣╬█████████`,
+`█████████████████▓▓╬╬╬╬╬╬╬▓╬╣╣▓╬╠░░░░░█╬▓██Ñ▀█▓╬╫▓▓█▓╬╬╬╬╣▓▓╬╬╬╬╬╬╬█████`,
+`████████████████▓╬╬╬╣╬╬╬╬╣╬╬╣▓╬╬Ü░░░░╟█╬▓╬▌»»░███▓▓▓▓▓╬╣▓▓╬╬╬╬╬╠╬╬╣╣████`,
+`███████████████▓╬╬╬╣▓╬╬╬╬╣╬╬╣▓╬╠░»░»▐█▓╬╬╬▌░;▓███▓▓▓▓▓█▓╬╬╠╠╠╠╠╢╫╬╬╣████`,
+`██████████████╬╬╬╬╬╣▓╣╣╣╣▓╬╣▓╬╬Ü░░░░███╬╬╣╬Æ╬▓██▓╣▓╬╢╬╬╠╠╠╠╠╠╬╠╬╬╬╣▓████`,
+`███████████▌█▓╬╣╬╬╬╣▓╬╬╬╬╣╬╣▓╬╬░░»░╫██▓▓▓╣╬╬╣▓╬╬╣▓╬╬╠╠╠╠╠╠▒╠╠╣╬╬╠╬╣█████`,
+`████████████▓▓╬╬╬╬╬╬╬╬╣▓╬╬╬╣╬╬H░░░▐████▓╬╠╬╣╬╣▓▓╬╬╠╠▒▒╠╠╠╬╢╬╬╬╠╠╬╬╬▓████`,
+`█████████▓▓▓▓▓▓╣▓╣╬╬▓▓▓▓╬╣╣▓╬╬░░░╓████▓╬╬╣╬╬╬╬╬╠╠╠╠╠╠╠╬╬╠╬╢╬╬╬╬╬╬╬╬╬╬███`,
+`███████████▓▓▓╣▓▓▓▓▓▓▓╬╬╬▓▓╬╬▒░░░▓███Ñ╠╠╬╠╬╬╬╠╠╠╠╠╠╬╠╬╬╬╬╬╬▓╬╬╬╬╬╠╠╬╬╣██`,
+`█████████╬╬▓▓╣▓▓▓▓▓╬██▓╬╣▓▓╬╬Ü░░╬╬▓█Ñ╠╠╠╠╠╠╠╠╠╠╠╬╬╬╬╬╬╬╬╬╣▓▓╬╬╠╠╠╠╠╠╬███`,
+`███████▓▓▓▓▓▓▓▓▓▓▓╬███▓╣╬▓▓╬Ñ▒▒Ü▀▓╬╬╠╠╬╠╠╠╠╠╬╬╬╬╬╬╬╬╣╣╬╣╬╬╣▓╬╬╠╠╠╠╠╠╬╣██`,
+`███████▓▓▓▓▓▓▓▓▓▓▓████▓▓╬▓▓╬░░░░]╚╬╬╬╬╠╠╠╬╬╬╣╣╣╬╬╬╬╣▓▓▓▓▓╣╣▓╬╬╬╬╬╬╠╠╠╬██`,
+`████▓▓▓▓▓▓▓▓▓▓▓▓▓██████▓▓▓╬Ñ▒Ü░▒░╔╬╬╬╠╠╬╣▓▓▓▓▓▓╬╣╣▓▓▓▓█▓▓╬╬╬╠╠╬╬╠╠╠╠╠╬██`,
+`█▓▓▓▓▓▓▓██████▓▓█████████▓▓╬╬╣▄▒▄▓╬╬╬╬╬╣▓▓╬╬▓▓▓▓╬╬╠╩╠╬╬╬╠╠▒▒╠╣╣╠╠╠▒╠╠╠╣█`,
+`██████▓▓▓▓▓▓▓▓▓████████▓▓╬Ü░ÜÜ╬╬╬╬╬╬╬╬╠╠╠╬╣╬▒╠╠╠╬╬╣╬╠▒▒▒╠▒▒ÜÖ╩╢╬╬▒╠╠▒╠╫█`,
+`▓▓▓▓▓▓▓▓▓▓▓▓██████████▓▓ÑÜ»»»╠╬╬╬╬╬╠╠╠╠╠▒▒▒╠╬╣▒▒▒▒▒╠╬╬▒▒▒▒╩╠▒Ü▒▒╚╠▒▒╠╠▓█`,
+  ];
+
+  // B&W grayscale color map
+  function charToColor(ch) {
+    if ('█'.includes(ch))           return '#111111';
+    if ('▓'.includes(ch))           return '#2a2a2a';
+    if ('▒'.includes(ch))           return '#444444';
+    if ('╣╬╫╢'.includes(ch))        return '#606060';
+    if ('╠╩╚'.includes(ch))         return '#888888';
+    if ('░Ü'.includes(ch))          return '#aaaaaa';
+    if ('▌▄ÑÆ'.includes(ch))        return '#cccccc';
+    if ('»H;,_`'.includes(ch))      return '#dddddd';
+    return '#505050';
+  }
+
+  // render each line as a <span>-colored div
+  lines.forEach((line, i) => {
+    setTimeout(() => {
+      const d = document.createElement('div');
+      d.className = 'line';
+      d.style.cssText = 'font-size:7.5px;line-height:1.15;letter-spacing:0.5px;white-space:pre;overflow:hidden';
+      d.style.animation = 'fi 0.08s ease';
+      let html = '';
+      for (const ch of line) {
+        const col = charToColor(ch);
+        html += `<span style="color:${col}">${ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : ch === '&' ? '&amp;' : ch}</span>`;
+      }
+      d.innerHTML = html;
+      outEl.appendChild(d);
+      outEl.scrollTop = outEl.scrollHeight;
+    }, i * 28);
+  });
+
+  const totalDelay = lines.length * 28 + 80;
+  setTimeout(() => { txt(''); }, totalDelay);
+  setTimeout(() => { txt(`welcome. type  help  to start.`); }, totalDelay + 60);
+  setTimeout(() => { txt(''); }, totalDelay + 80);
+}
+
+bootAscii();
+
+/* run */
+let hist=[], hidx=-1;
+const ALL_CMDS = [...Object.keys(CMDS),'clear','cat','open','photos'];
+
+function run(raw) {
+  if (!raw.trim()) return;
+  hist.unshift(raw); hidx=-1;
+  echo(raw);
+  const parts = raw.trim().split(/\s+/);
+  const cmd = parts[0].toLowerCase();
+  const arg = parts[1];
+  if (cmd==='clear')  { outEl.innerHTML=''; bootAscii(); return; }
+  if (cmd==='cat')    { catFile(arg); return; }
+  if (cmd==='open')   { openLink(arg); return; }
+  if (cmd==='photos') { CMDS.photos(); return; }
+  if (CMDS[cmd])      { CMDS[cmd](); return; }
+  txt(`command not found: ${cmd}`, 'c-red');
+  txt('type  help  for available commands', 'c-dim');
+  blank();
+}
+
+inpEl.addEventListener('keydown', e => {
+  if (e.key==='Enter') { const v=inpEl.value; inpEl.value=''; run(v); }
+  if (e.key==='ArrowUp')   { e.preventDefault(); if(hidx<hist.length-1)hidx++; inpEl.value=hist[hidx]||''; }
+  if (e.key==='ArrowDown') { e.preventDefault(); hidx>0?(hidx--,inpEl.value=hist[hidx]):(hidx=-1,inpEl.value=''); }
+  if (e.key==='Tab') {
+    e.preventDefault();
+    const p=inpEl.value.toLowerCase().trim();
+    if(!p) return;
+    const m=ALL_CMDS.find(c=>c.startsWith(p));
+    if(m) inpEl.value=m;
+  }
+});
+
+document.getElementById('win').addEventListener('click', ()=>inpEl.focus());
+
+/* ── RESIZABLE WINDOW ── */
+(function() {
+  const win = document.getElementById('win');
+  const handle = document.getElementById('resize-h');
+  let dragging = false, startX, startY, startW, startH;
+
+  handle.addEventListener('mousedown', e => {
+    e.preventDefault();
+    dragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    startW = win.offsetWidth;
+    startH = win.offsetHeight;
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'se-resize';
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const newW = Math.max(340, startW + (e.clientX - startX));
+    const newH = Math.max(300, startH + (e.clientY - startY));
+    win.style.maxWidth = 'none';
+    win.style.width  = newW + 'px';
+    const outEl2 = document.getElementById('out');
+    if (outEl2) outEl2.style.maxHeight = Math.max(200, newH - 160) + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+  });
+
+  /* touch support */
+  handle.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    dragging = true;
+    startX = t.clientX; startY = t.clientY;
+    startW = win.offsetWidth; startH = win.offsetHeight;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    const t = e.touches[0];
+    const newW = Math.max(340, startW + (t.clientX - startX));
+    const newH = Math.max(300, startH + (t.clientY - startY));
+    win.style.maxWidth = 'none';
+    win.style.width = newW + 'px';
+    const outEl2 = document.getElementById('out');
+    if (outEl2) outEl2.style.maxHeight = Math.max(200, newH - 160) + 'px';
+  }, { passive: true });
+
+  document.addEventListener('touchend', () => { dragging = false; });
+})();
+
+/* cursor — mirror typed text into visible span so cursor always follows */
+const mirrorEl = document.getElementById('input-mirror');
+function syncMirror() {
+  if (mirrorEl) mirrorEl.textContent = inpEl.value;
+}
+inpEl.addEventListener('input', syncMirror);
+inpEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter') setTimeout(() => { if (mirrorEl) mirrorEl.textContent = ''; }, 10);
+});
+window.addEventListener('load', ()=>inpEl.focus());
+</script>
+</body>
+</html>
